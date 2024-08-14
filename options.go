@@ -131,6 +131,21 @@ func TrustedOrigins(origins []string) Option {
 	}
 }
 
+// TrustedOriginPredicateFunc configures a predicate function that can be used
+// to determine if a given Referer is trusted.
+// Like TrustedOrigins, this will allow cross-domain CSRF use-cases - e.g. where
+// the front-end is served from a different domain than the API server - to
+// correctly pass a CSRF check.
+// However, this function allows for more complex logic to be applied to determine
+// if a Referer is trusted than strict equality string matching.
+//
+// You should only pass origins you own or have full control over.
+func TrustedOriginPredicateFunc(f func(referer string) bool) Option {
+	return func(cs *csrf) {
+		cs.opts.TrustedOriginPredicateFunc = f
+	}
+}
+
 // setStore sets the store used by the CSRF middleware.
 // Note: this is private (for now) to allow for internal API changes.
 func setStore(s store) Option {
