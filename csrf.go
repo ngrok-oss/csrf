@@ -85,14 +85,15 @@ type options struct {
 	Path   string
 	// Note that the function and field names match the case of the associated
 	// http.Cookie field instead of the "correct" HTTPOnly name that golint suggests.
-	HttpOnly       bool
-	Secure         bool
-	SameSite       SameSiteMode
-	RequestHeader  string
-	FieldName      string
-	ErrorHandler   http.Handler
-	CookieName     string
-	TrustedOrigins []string
+	HttpOnly                   bool
+	Secure                     bool
+	SameSite                   SameSiteMode
+	RequestHeader              string
+	FieldName                  string
+	ErrorHandler               http.Handler
+	CookieName                 string
+	TrustedOrigins             []string
+	TrustedOriginPredicateFunc func(referer string) bool
 }
 
 // Protect is HTTP middleware that provides Cross-Site Request Forgery
@@ -258,10 +259,14 @@ func (cs *csrf) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			valid := sameOrigin(r.URL, referer)
 
 			if !valid {
-				for _, trustedOrigin := range cs.opts.TrustedOrigins {
-					if referer.Host == trustedOrigin {
-						valid = true
-						break
+				if cs.opts.TrustedOriginPredicateFunc != nil {
+					valid = cs.opts.TrustedOriginPredicateFunc(referer.Host)
+				} else {
+					for _, trustedOrigin := range cs.opts.TrustedOrigins {
+						if referer.Host == trustedOrigin {
+							valid = true
+							break
+						}
 					}
 				}
 			}
